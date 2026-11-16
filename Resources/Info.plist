@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleExecutable</key>
+    <string>OptSwitch</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.local.OptSwitch</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>OptSwitch</string>
+    <key>CFBundleDisplayName</key>
+    <string>OptSwitch</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSAccessibilityUsageDescription</key>
+    <string>OptSwitch uses Accessibility locally on your Mac to listen for Option+Tab and focus the window you choose. OptSwitch has zero internet access and never sends data anywhere.</string>
+    <key>NSScreenCaptureUsageDescription</key>
+    <string>OptSwitch uses Screen Recording locally on your Mac to read window titles and show lightweight window thumbnails when switching windows. OptSwitch is 100% offline and never saves or transmits images.</string>
+</dict>
+</plist>
