@@ -29,13 +29,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func setupMenuBar() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
-            if let symbol = NSImage(systemSymbolName: "rectangle.stack", accessibilityDescription: "OptSwitch") {
+            if let symbol = NSImage(systemSymbolName: "rectangle.stack", accessibilityDescription: "MacAltTab") {
                 symbol.isTemplate = true
                 button.image = symbol
             } else {
-                button.title = "OptSwitch"
+                button.title = "MacAltTab"
             }
-            button.toolTip = "OptSwitch - Offline Option+Tab Window Switcher"
+            button.toolTip = "MacAltTab - Offline Option+Tab Window Switcher"
         }
 
         let menu = NSMenu()

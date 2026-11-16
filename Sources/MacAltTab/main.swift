@@ -20,7 +20,7 @@ if CommandLine.arguments.contains("--self-test") {
     }
 
     let memMB = String(format: "%.2f", WindowEngine.currentResidentMemoryMB())
-    print("[OptSwitch Self-Test] SecurityAudit=\(auditPassed), Memory100xCheck=\(memoryPassed), DiscoveredWindows=\(windows.count), ResidentRAM=\(memMB)MB")
+    print("[MacAltTab Self-Test] SecurityAudit=\(auditPassed), Memory100xCheck=\(memoryPassed), DiscoveredWindows=\(windows.count), ResidentRAM=\(memMB)MB")
     for (idx, win) in windows.prefix(5).enumerated() {
         print("  [\(idx)] \(win.appName) — \"\(win.windowTitle)\" (\(Int(win.bounds.width))x\(Int(win.bounds.height)))")
     }

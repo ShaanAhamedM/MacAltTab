@@ -3,4 +3,5 @@
 *.xcodeproj
 DerivedData/
 .swiftpm/
+MacAltTab.app/
 OptSwitch.app/

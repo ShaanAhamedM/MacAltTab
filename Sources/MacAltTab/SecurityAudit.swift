@@ -18,7 +18,7 @@ enum SecurityAudit {
 
         for key in forbiddenDyldVars {
             if let value = env[key], !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                fputs("[OptSwitch Security Alert] Detected unsafe environment variable \(key). Refusing to launch.\n", stderr)
+                fputs("[MacAltTab Security Alert] Detected unsafe environment variable \(key). Refusing to launch.\n", stderr)
                 Darwin.exit(EXIT_FAILURE)
             }
         }

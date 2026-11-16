@@ -2,19 +2,19 @@
 import PackageDescription
 
 let package = Package(
-    name: "OptSwitch",
+    name: "MacAltTab",
     platforms: [
         .macOS(.v13)
     ],
     products: [
-        .executable(name: "OptSwitch", targets: ["OptSwitch"])
+        .executable(name: "MacAltTab", targets: ["MacAltTab"])
     ],
     dependencies: [],
     targets: [
         .executableTarget(
-            name: "OptSwitch",
+            name: "MacAltTab",
             dependencies: [],
-            path: "Sources/OptSwitch",
+            path: "Sources/MacAltTab",
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("CoreGraphics"),

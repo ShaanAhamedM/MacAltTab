@@ -74,7 +74,7 @@ final class PermissionManager: NSObject {
             backing: .buffered,
             defer: false
         )
-        window.title = "OptSwitch Permissions Setup"
+        window.title = "MacAltTab Permissions Setup"
         window.isReleasedWhenClosed = false
         window.center()
 
@@ -82,12 +82,12 @@ final class PermissionManager: NSObject {
         contentView.wantsLayer = true
 
         // Title
-        let titleLabel = NSTextField(labelWithString: "OptSwitch Setup (100% Offline)")
+        let titleLabel = NSTextField(labelWithString: "MacAltTab Setup (100% Offline)")
         titleLabel.font = NSFont.boldSystemFont(ofSize: 18)
         titleLabel.frame = NSRect(x: 24, y: 245, width: 412, height: 28)
         contentView.addSubview(titleLabel)
 
-        let subtitleLabel = NSTextField(wrappingLabelWithString: "OptSwitch runs locally with zero internet access. Accessibility permission is required to listen for Option+Tab and switch windows.")
+        let subtitleLabel = NSTextField(wrappingLabelWithString: "MacAltTab runs locally with zero internet access. Accessibility permission is required to listen for Option+Tab and switch windows.")
         subtitleLabel.font = NSFont.systemFont(ofSize: 13)
         subtitleLabel.textColor = .secondaryLabelColor
         subtitleLabel.frame = NSRect(x: 24, y: 195, width: 412, height: 42)

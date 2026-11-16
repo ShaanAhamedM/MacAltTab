@@ -1,14 +1,14 @@
 <div align="center">
 
-# MacAltTab (`OptSwitch`)
+# MacAltTab
 
 **A native, crash-proof, 100% offline Windows-style `Option + Tab` (`Alt + Tab`) window switcher for macOS.**
 
 [![Platform](https://img.shields.io/badge/Platform-macOS_13%2B_(Apple_Silicon)-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/ShaanAhamedM/MacAltTab)
 [![Swift](https://img.shields.io/badge/Swift-5.9%2B-F05138?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org)
-[![Network](https://img.shields.io/badge/Network_Access-Zero_(100%25_Offline)-2ea44f?style=for-the-badge)](Resources/OptSwitch.entitlements)
+[![Network](https://img.shields.io/badge/Network_Access-Zero_(100%25_Offline)-2ea44f?style=for-the-badge)](Resources/MacAltTab.entitlements)
 [![Dependencies](https://img.shields.io/badge/Dependencies-Zero_(Pure_Native)-0969da?style=for-the-badge)](Package.swift)
-[![RAM Usage](https://img.shields.io/badge/RAM_Footprint-~11_MB-8a2be2?style=for-the-badge)](Sources/OptSwitch/WindowEngine.swift)
+[![RAM Usage](https://img.shields.io/badge/RAM_Footprint-~11_MB-8a2be2?style=for-the-badge)](Sources/MacAltTab/WindowEngine.swift)
 
 </div>
 
@@ -18,7 +18,7 @@
 
 On macOS, `Command + Tab` switches between **applications**, not individual **windows**. If you have three VS Code windows, two Terminal windows, and two Chrome windows open, macOS forces you to remember different shortcuts (`Cmd + Tab` vs `Cmd + ~`).
 
-**MacAltTab** (`OptSwitch.app`) brings true Windows-style `Option + Tab` (`Alt + Tab`) individual window switching to macOS—engineered from the ground up with **strict systems-engineering and security guardrails** so it never freezes `WindowServer`, never leaks memory, and never connects to the internet.
+**MacAltTab** (`MacAltTab.app`) brings true Windows-style `Option + Tab` (`Alt + Tab`) individual window switching to macOS—engineered from the ground up with **strict systems-engineering and security guardrails** so it never freezes `WindowServer`, never leaks memory, and never connects to the internet.
 
 ---
 
@@ -34,7 +34,7 @@ On macOS, `Command + Tab` switches between **applications**, not individual **wi
 
 ## Security & Stability Architecture
 
-Because window switchers require macOS **Accessibility** (and optionally **Screen Recording**) permissions, **OptSwitch** is designed to be completely auditable in under 5 minutes (~800 lines of pure Swift across 7 files):
+Because window switchers require macOS **Accessibility** (and optionally **Screen Recording**) permissions, **MacAltTab** is designed to be completely auditable in under 5 minutes (~800 lines of pure Swift across 7 files):
 
 ```mermaid
 flowchart LR
@@ -47,16 +47,16 @@ flowchart LR
 
 ### 1. Zero Network & Anti-Injection Lockdown
 - **No Networking Code:** Zero `URLSession`, `Network`, sockets, HTTP, or WebSocket calls exist anywhere in the repository.
-- **Hardened Entitlements ([`Resources/OptSwitch.entitlements`](Resources/OptSwitch.entitlements)):** Explicitly sets `com.apple.security.network.client = false` and `com.apple.security.network.server = false`.
-- **Startup Security Audit ([`SecurityAudit.swift`](Sources/OptSwitch/SecurityAudit.swift)):** Verifies at startup that no dynamic library injection variables (`DYLD_INSERT_LIBRARIES`, `DYLD_FORCE_FLAT_NAMESPACE`, etc.) are attached to the process, refusing to launch if tampering is detected, and strips any proxy environment variables.
+- **Hardened Entitlements ([`Resources/MacAltTab.entitlements`](Resources/MacAltTab.entitlements)):** Explicitly sets `com.apple.security.network.client = false` and `com.apple.security.network.server = false`.
+- **Startup Security Audit ([`SecurityAudit.swift`](Sources/MacAltTab/SecurityAudit.swift)):** Verifies at startup that no dynamic library injection variables (`DYLD_INSERT_LIBRARIES`, `DYLD_FORCE_FLAT_NAMESPACE`, etc.) are attached to the process, refusing to launch if tampering is detected, and strips any proxy environment variables.
 
-### 2. Crash-Proof `CGEventTap` ([`HotKeyInterceptor.swift`](Sources/OptSwitch/HotKeyInterceptor.swift))
+### 2. Crash-Proof `CGEventTap` ([`HotKeyInterceptor.swift`](Sources/MacAltTab/HotKeyInterceptor.swift))
 - **Rule #1 (`< 1ms` Callback):** Never queries window lists, captures screenshots, or touches AppKit UI synchronously inside the event tap callback. All UI work is dispatched asynchronously to `DispatchQueue.main.async`.
 - **Watchdog Recovery:** Automatically intercepts `.tapDisabledByTimeout` and `.tapDisabledByUserInput` and immediately re-enables the tap so macOS never drops shortcuts.
 - **Fast-Tap Race Guard:** Detects if you tap and release `Option + Tab` in under 20ms and switches immediately without leaving the HUD stuck on screen.
 - **Emergency Killswitch (`Ctrl + Opt + Esc`):** Pressing `Control + Option + Escape` inside the event tap immediately disables the tap and terminates the process.
 
-### 3. Zero Memory Leaks ([`WindowEngine.swift`](Sources/OptSwitch/WindowEngine.swift))
+### 3. Zero Memory Leaks ([`WindowEngine.swift`](Sources/MacAltTab/WindowEngine.swift))
 - Wraps every call to `CGWindowListCopyWindowInfo` and `CGWindowListCreateImage` inside nested `autoreleasepool { ... }` blocks.
 - Captures thumbnails **only once** when the HUD opens—holding `Option` and pressing `Tab` repeatedly only moves the selection highlight in memory.
 - Downscales thumbnails to a maximum of `320x200` pixels and releases all image buffers the instant the HUD closes.
@@ -76,14 +76,14 @@ Clone the repository and run the automated build, self-test, and app-bundling sc
 git clone https://github.com/ShaanAhamedM/MacAltTab.git
 cd MacAltTab
 bash scripts/bundle_app.sh
-open OptSwitch.app
+open MacAltTab.app
 ```
 
 What `scripts/bundle_app.sh` does:
 1. Compiles a release `arm64` binary with `swift build -c release`.
 2. Runs the built-in `--self-test` suite (verifies the anti-injection audit and runs 100 consecutive window discovery cycles to ensure flat RAM usage under 35 MB).
-3. Packages `OptSwitch.app` with [`Resources/Info.plist`](Resources/Info.plist) (`LSUIElement = true` so it lives cleanly in your Menu Bar).
-4. Signs the bundle locally with hardened offline entitlements ([`Resources/OptSwitch.entitlements`](Resources/OptSwitch.entitlements)).
+3. Packages `MacAltTab.app` with [`Resources/Info.plist`](Resources/Info.plist) (`LSUIElement = true` so it lives cleanly in your Menu Bar).
+4. Signs the bundle locally with hardened offline entitlements ([`Resources/MacAltTab.entitlements`](Resources/MacAltTab.entitlements)).
 
 ---
 
@@ -97,32 +97,32 @@ What `scripts/bundle_app.sh` does:
 | <kbd>←</kbd> / <kbd>→</kbd> **Arrow Keys** | Navigate left or right while the switcher HUD is open |
 | <kbd>Return</kbd> / **Mouse Click** | Immediately switch to the selected/clicked window |
 | <kbd>Escape</kbd> *(while HUD is open)* | Cancel switching and close the HUD without changing focus |
-| <kbd>Control</kbd> + <kbd>Option</kbd> + <kbd>Escape</kbd> | **Emergency Panic Killswitch:** Immediately disables the keyboard tap and quits OptSwitch |
+| <kbd>Control</kbd> + <kbd>Option</kbd> + <kbd>Escape</kbd> | **Emergency Panic Killswitch:** Immediately disables the keyboard tap and quits MacAltTab |
 
 ---
 
 ## Permissions Explained
 
-When you first launch `OptSwitch.app`, a clean **Permissions Setup** window appears if Accessibility is not yet enabled:
+When you first launch `MacAltTab.app`, a clean **Permissions Setup** window appears if Accessibility is not yet enabled:
 
 1. **Accessibility (Required):**
    - **Why:** Required by macOS to listen for the `Option + Tab` shortcut and raise the specific window you select to the front (`AXUIElement`).
    - **Where:** `System Settings -> Privacy & Security -> Accessibility`
 2. **Screen Recording (Optional — For Live Thumbnails):**
    - **Why:** Used locally in memory (`CGWindowListCreateImage`) to display miniature `320x200` window previews inside the `Option + Tab` HUD.
-   - **Don't want to grant Screen Recording?** No problem! **OptSwitch works without Screen Recording permission**—it automatically falls back to displaying high-resolution **Application Icons** and reads window titles via the Accessibility API instead.
+   - **Don't want to grant Screen Recording?** No problem! **MacAltTab works without Screen Recording permission**—it automatically falls back to displaying high-resolution **Application Icons** and reads window titles via the Accessibility API instead.
 
 ---
 
 ## Project Structure
 
 ```text
-OptSwitch/
+MacAltTab/
 ├── Package.swift                        # Swift Package Manager manifest (macOS 13+, zero dependencies)
 ├── Resources/
 │   ├── Info.plist                       # Menu Bar utility config (LSUIElement) & privacy strings
-│   └── OptSwitch.entitlements           # Explicit anti-network & anti-DYLD-injection entitlements
-├── Sources/OptSwitch/
+│   └── MacAltTab.entitlements           # Explicit anti-network & anti-DYLD-injection entitlements
+├── Sources/MacAltTab/
 │   ├── main.swift                       # Startup security audit, --self-test runner, and app entry
 │   ├── SecurityAudit.swift              # Blocks DYLD_INSERT_LIBRARIES & strips proxy env vars
 │   ├── PermissionManager.swift          # Non-spamming Accessibility & Screen Recording onboarding UI

@@ -5,15 +5,15 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleExecutable</key>
-    <string>OptSwitch</string>
+    <string>MacAltTab</string>
     <key>CFBundleIdentifier</key>
-    <string>com.local.OptSwitch</string>
+    <string>com.local.MacAltTab</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>OptSwitch</string>
+    <string>MacAltTab</string>
     <key>CFBundleDisplayName</key>
-    <string>OptSwitch</string>
+    <string>MacAltTab</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -27,8 +27,8 @@
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSAccessibilityUsageDescription</key>
-    <string>OptSwitch uses Accessibility locally on your Mac to listen for Option+Tab and focus the window you choose. OptSwitch has zero internet access and never sends data anywhere.</string>
+    <string>MacAltTab uses Accessibility locally on your Mac to listen for Option+Tab and focus the window you choose. MacAltTab has zero internet access and never sends data anywhere.</string>
     <key>NSScreenCaptureUsageDescription</key>
-    <string>OptSwitch uses Screen Recording locally on your Mac to read window titles and show lightweight window thumbnails when switching windows. OptSwitch is 100% offline and never saves or transmits images.</string>
+    <string>MacAltTab uses Screen Recording locally on your Mac to read window titles and show lightweight window thumbnails when switching windows. MacAltTab is 100% offline and never saves or transmits images.</string>
 </dict>
 </plist>
