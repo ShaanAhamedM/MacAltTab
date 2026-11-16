@@ -1,10 +1,10 @@
 <div align="center">
 
-# OptSwitch
+# MacAltTab (`OptSwitch`)
 
 **A native, crash-proof, 100% offline Windows-style `Option + Tab` (`Alt + Tab`) window switcher for macOS.**
 
-[![Platform](https://img.shields.io/badge/Platform-macOS_13%2B_(Apple_Silicon)-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/ShaanAhamedM/OptSwitch)
+[![Platform](https://img.shields.io/badge/Platform-macOS_13%2B_(Apple_Silicon)-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/ShaanAhamedM/MacAltTab)
 [![Swift](https://img.shields.io/badge/Swift-5.9%2B-F05138?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org)
 [![Network](https://img.shields.io/badge/Network_Access-Zero_(100%25_Offline)-2ea44f?style=for-the-badge)](Resources/OptSwitch.entitlements)
 [![Dependencies](https://img.shields.io/badge/Dependencies-Zero_(Pure_Native)-0969da?style=for-the-badge)](Package.swift)
@@ -14,11 +14,11 @@
 
 ---
 
-## Why OptSwitch?
+## Why MacAltTab?
 
 On macOS, `Command + Tab` switches between **applications**, not individual **windows**. If you have three VS Code windows, two Terminal windows, and two Chrome windows open, macOS forces you to remember different shortcuts (`Cmd + Tab` vs `Cmd + ~`).
 
-**OptSwitch** brings true Windows-style `Option + Tab` (`Alt + Tab`) individual window switching to macOS—engineered from the ground up with **strict systems-engineering and security guardrails** so it never freezes `WindowServer`, never leaks memory, and never connects to the internet.
+**MacAltTab** (`OptSwitch.app`) brings true Windows-style `Option + Tab` (`Alt + Tab`) individual window switching to macOS—engineered from the ground up with **strict systems-engineering and security guardrails** so it never freezes `WindowServer`, never leaks memory, and never connects to the internet.
 
 ---
 
@@ -73,8 +73,8 @@ flowchart LR
 Clone the repository and run the automated build, self-test, and app-bundling script:
 
 ```bash
-git clone https://github.com/ShaanAhamedM/OptSwitch.git
-cd OptSwitch
+git clone https://github.com/ShaanAhamedM/MacAltTab.git
+cd MacAltTab
 bash scripts/bundle_app.sh
 open OptSwitch.app
 ```
