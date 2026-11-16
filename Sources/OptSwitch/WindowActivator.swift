@@ -11,13 +11,9 @@ final class WindowActivator {
     /// Activates the target application and raises the exact matching window via Accessibility API.
     func activate(window: WindowItem) {
         autoreleasepool {
-            // 1. Activate the owning application
-            if let runningApp = NSRunningApplication(processIdentifier: window.ownerPID) {
-                runningApp.activate(options: [.activateIgnoringOtherApps])
-            }
-
-            // 2. Use Accessibility API to find and raise the specific window (by bounds and title)
             guard PermissionManager.shared.isAccessibilityGranted() else {
+                // Fallback if Accessibility is somehow unavailable: just activate the app
+                NSRunningApplication(processIdentifier: window.ownerPID)?.activate(options: [.activateIgnoringOtherApps])
                 return
             }
 
@@ -29,14 +25,25 @@ final class WindowActivator {
                 &windowsRef
             )
 
-            guard result == .success, let axWindows = windowsRef as? [AXUIElement], !axWindows.isEmpty else {
-                return
+            // 1. First raise and mark the specific AXWindow as main/focused before activating the app,
+            //    so multi-window apps (like VS Code, Safari, Finder) don't flash the wrong window first.
+            var matchedWindow: AXUIElement?
+            if result == .success, let axWindows = windowsRef as? [AXUIElement], !axWindows.isEmpty {
+                matchedWindow = findBestMatchingAXWindow(in: axWindows, matching: window) ?? axWindows.first
+                if let target = matchedWindow {
+                    AXUIElementSetAttributeValue(target, kAXMainAttribute as CFString, kCFBooleanTrue)
+                    AXUIElementSetAttributeValue(target, kAXFocusedAttribute as CFString, kCFBooleanTrue)
+                    AXUIElementPerformAction(target, kAXRaiseAction as CFString)
+                }
             }
 
-            let targetElement = findBestMatchingAXWindow(in: axWindows, matching: window) ?? axWindows.first
-            if let target = targetElement {
-                AXUIElementSetAttributeValue(target, kAXMainAttribute as CFString, kCFBooleanTrue)
-                AXUIElementSetAttributeValue(target, kAXFocusedAttribute as CFString, kCFBooleanTrue)
+            // 2. Activate the owning application
+            if let runningApp = NSRunningApplication(processIdentifier: window.ownerPID) {
+                runningApp.activate(options: [.activateIgnoringOtherApps])
+            }
+
+            // 3. Re-assert kAXRaiseAction after app activation to guarantee window order
+            if let target = matchedWindow {
                 AXUIElementPerformAction(target, kAXRaiseAction as CFString)
             }
         }

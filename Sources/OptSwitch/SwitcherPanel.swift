@@ -4,10 +4,15 @@ import AppKit
 final class WindowCardView: NSView {
     let index: Int
     var onClick: ((Int) -> Void)?
+    var onHover: ((Int) -> Void)?
+
+    private var trackingArea: NSTrackingArea?
 
     var isSelected: Bool = false {
         didSet {
-            updateSelectionAppearance()
+            if oldValue != isSelected {
+                updateSelectionAppearance()
+            }
         }
     }
 
@@ -29,6 +34,21 @@ final class WindowCardView: NSView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let existing = trackingArea {
+            removeTrackingArea(existing)
+        }
+        let area = NSTrackingArea(
+            rect: bounds,
+            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(area)
+        trackingArea = area
+    }
+
     private func setupSubviews(with item: WindowItem) {
         let padding: CGFloat = 10
         let cardWidth = bounds.width
@@ -46,7 +66,7 @@ final class WindowCardView: NSView {
         let previewContainer = NSView(frame: previewFrame)
         previewContainer.wantsLayer = true
         previewContainer.layer?.cornerRadius = 8
-        previewContainer.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.25).cgColor
+        previewContainer.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.28).cgColor
         addSubview(previewContainer)
 
         if let thumbnail = item.thumbnail {
@@ -106,12 +126,16 @@ final class WindowCardView: NSView {
         if isSelected {
             layer?.borderWidth = 3.0
             layer?.borderColor = NSColor.controlAccentColor.cgColor
-            layer?.backgroundColor = NSColor.white.withAlphaComponent(0.16).cgColor
+            layer?.backgroundColor = NSColor.white.withAlphaComponent(0.18).cgColor
         } else {
             layer?.borderWidth = 1.0
             layer?.borderColor = NSColor.white.withAlphaComponent(0.12).cgColor
             layer?.backgroundColor = NSColor.white.withAlphaComponent(0.05).cgColor
         }
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        onHover?(index)
     }
 
     override func mouseDown(with event: NSEvent) {
@@ -235,6 +259,9 @@ final class SwitcherPanel: NSPanel {
 
             let cardFrame = NSRect(x: x, y: y, width: cardWidth, height: cardHeight)
             let card = WindowCardView(frame: cardFrame, item: item, index: index, isSelected: index == selectedIndex)
+            card.onHover = { [weak self] hoveredIdx in
+                self?.updateSelection(to: hoveredIdx)
+            }
             card.onClick = { [weak self] clickedIdx in
                 guard let self = self else { return }
                 self.updateSelection(to: clickedIdx)

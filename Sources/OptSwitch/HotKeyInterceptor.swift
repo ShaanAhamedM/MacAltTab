@@ -10,13 +10,14 @@ final class HotKeyInterceptor {
     fileprivate var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
 
-    /// Tracked atomically-safe boolean flags for the event tap callback.
+    /// Tracked state flags for the event tap callback.
     fileprivate var isSwitcherActive: Bool = false
     var isPaused: Bool = false
 
     // Main-thread UI callbacks
     var onCycleForward: (() -> Void)?
     var onCycleBackward: (() -> Void)?
+    var onNavigateDirection: ((Int) -> Void)?
     var onCommitSelection: (() -> Void)?
     var onCancelSelection: (() -> Void)?
 
@@ -25,8 +26,12 @@ final class HotKeyInterceptor {
     /// Starts the global CGEventTap at `.cgSessionEventTap`, `.headInsertEventTap`, `.defaultTap`.
     @discardableResult
     func start() -> Bool {
-        if eventTap != nil {
-            return true
+        if let existingTap = eventTap {
+            if CFMachPortIsValid(existingTap) {
+                CGEvent.tapEnable(tap: existingTap, enable: true)
+                return true
+            }
+            stop()
         }
 
         let eventMask: CGEventMask =
@@ -72,6 +77,12 @@ final class HotKeyInterceptor {
     func setSwitcherActive(_ active: Bool) {
         isSwitcherActive = active
     }
+
+    /// Checks whether the Option (`.maskAlternate`) key is currently physically held down.
+    static func isOptionKeyHeldDown() -> Bool {
+        let currentFlags = CGEventSource.flagsState(.combinedSessionState)
+        return currentFlags.contains(.maskAlternate)
+    }
 }
 
 /// Top-level C function pointer for CGEventTapCallBack.
@@ -116,7 +127,7 @@ private func hotKeyEventTapCallback(
         return Unmanaged.passUnretained(event)
     }
 
-    // 3. Handle KeyDown events (Option + Tab, Option + Shift + Tab, Escape while active)
+    // 3. Handle KeyDown events (Option + Tab, Option + Shift + Tab, Arrow keys & Escape while active)
     if type == .keyDown {
         let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
 
@@ -136,13 +147,34 @@ private func hotKeyEventTapCallback(
             return nil
         }
 
-        // Escape (keyCode 53) while switcher is open -> cancel and close HUD
-        if keyCode == 53 && interceptor.isSwitcherActive {
-            interceptor.isSwitcherActive = false
-            DispatchQueue.main.async {
-                interceptor.onCancelSelection?()
+        // Additional convenience keys while switcher HUD is open
+        if interceptor.isSwitcherActive {
+            switch keyCode {
+            case 53: // Escape -> cancel and close HUD
+                interceptor.isSwitcherActive = false
+                DispatchQueue.main.async {
+                    interceptor.onCancelSelection?()
+                }
+                return nil
+            case 36, 76: // Return or Numpad Enter -> commit selection immediately
+                interceptor.isSwitcherActive = false
+                DispatchQueue.main.async {
+                    interceptor.onCommitSelection?()
+                }
+                return nil
+            case 123: // Left Arrow -> previous item
+                DispatchQueue.main.async {
+                    interceptor.onCycleBackward?()
+                }
+                return nil
+            case 124: // Right Arrow -> next item
+                DispatchQueue.main.async {
+                    interceptor.onCycleForward?()
+                }
+                return nil
+            default:
+                break
             }
-            return nil
         }
     }
 

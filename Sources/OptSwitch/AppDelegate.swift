@@ -1,7 +1,7 @@
 import AppKit
 
 /// Main application controller coordinating the Menu Bar item, permissions, hotkeys, and switcher HUD.
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem?
     private var statusMenuItem: NSMenuItem?
     private var pauseMenuItem: NSMenuItem?
@@ -39,6 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let menu = NSMenu()
+        menu.delegate = self
 
         let statusLine = NSMenuItem(title: "Status: Checking Permissions...", action: nil, keyEquivalent: "")
         statusLine.isEnabled = false
@@ -69,6 +70,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item.menu = menu
         self.statusItem = item
 
+        updateMenuStatusText()
+    }
+
+    func menuWillOpen(_ menu: NSMenu) {
+        if PermissionManager.shared.isAccessibilityGranted() {
+            _ = HotKeyInterceptor.shared.start()
+        }
         updateMenuStatusText()
     }
 
@@ -133,13 +141,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return
             }
 
-            isHUDVisible = true
             let initialSelection: Int
             if windows.count > 1 {
                 initialSelection = forward ? 1 : (windows.count - 1)
             } else {
                 initialSelection = 0
             }
+
+            // Fast-Tap Guard: If the user already released the Option key before the initial window fetch completed,
+            // immediately activate the target window without leaving the HUD stuck on screen!
+            if !HotKeyInterceptor.isOptionKeyHeldDown() {
+                HotKeyInterceptor.shared.setSwitcherActive(false)
+                self.isHUDVisible = false
+                WindowActivator.shared.activate(window: windows[initialSelection])
+                return
+            }
+
+            isHUDVisible = true
             switcherPanel.present(with: windows, initialIndex: initialSelection)
         } else {
             // On repeat presses of Tab while Option is held, only move the highlight index
@@ -171,12 +189,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let interceptor = HotKeyInterceptor.shared
         interceptor.isPaused.toggle()
         if interceptor.isPaused && isHUDVisible {
+            HotKeyInterceptor.shared.setSwitcherActive(false)
             cancelAndCloseSwitcher()
         }
         updateMenuStatusText()
     }
 
     @objc private func openPermissionsWindow() {
+        PermissionManager.shared.showOnboardingIfNeeded { [weak self] in
+            self?.startEventTapIfPermitted()
+        }
         PermissionManager.shared.showOnboardingWindow()
     }
 

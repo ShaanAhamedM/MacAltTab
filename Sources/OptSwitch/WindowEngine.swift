@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import CoreGraphics
 import Foundation
 import Darwin
@@ -20,6 +21,22 @@ final class WindowEngine {
 
     /// Maximum thumbnail dimensions (320x200) to guarantee low GPU/RAM footprint (<35MB).
     private let maxThumbnailSize = NSSize(width: 320, height: 200)
+
+    /// System background processes that own layer-0 windows which are not user-switchable apps.
+    private let excludedSystemOwnerNames: Set<String> = [
+        "Window Server",
+        "Dock",
+        "Control Center",
+        "Notification Center",
+        "SystemUIServer",
+        "Spotlight",
+        "Wallpaper",
+        "loginwindow",
+        "universalAccessAuthWarn",
+        "TextInputMenuAgent",
+        "TextInputSwitcher",
+        "CoreServicesUIAgent"
+    ]
 
     private init() {}
 
@@ -57,7 +74,7 @@ final class WindowEngine {
                 let windowID = CGWindowID(rawWindowID)
 
                 // 4. Filter out transparent or hidden overlay windows
-                if let alpha = entry[kCGWindowAlpha as String] as? Double, alpha <= 0.01 {
+                if let alpha = entry[kCGWindowAlpha as String] as? Double, alpha <= 0.05 {
                     continue
                 }
 
@@ -69,15 +86,30 @@ final class WindowEngine {
                     continue
                 }
 
-                // 6. Resolve running application & icon
-                let runningApp = NSRunningApplication(processIdentifier: pid)
+                // 6. Resolve running application & filter out background daemons / non-regular agents
+                guard let runningApp = NSRunningApplication(processIdentifier: pid),
+                      !runningApp.isTerminated else {
+                    continue
+                }
+
+                // Only include regular user applications (those that appear in the Dock / have normal UI windows)
+                guard runningApp.activationPolicy == .regular else {
+                    continue
+                }
+
                 let ownerName = (entry[kCGWindowOwnerName as String] as? String)
-                    ?? runningApp?.localizedName
+                    ?? runningApp.localizedName
                     ?? "Application"
+
+                if excludedSystemOwnerNames.contains(ownerName) {
+                    continue
+                }
+
                 let rawTitle = (entry[kCGWindowName as String] as? String)?
                     .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                let displayTitle = rawTitle.isEmpty ? ownerName : rawTitle
-                let icon = runningApp?.icon
+                let axFallbackTitle = rawTitle.isEmpty ? resolveAXWindowTitle(pid: pid, bounds: bounds) : nil
+                let displayTitle = !rawTitle.isEmpty ? rawTitle : (axFallbackTitle ?? ownerName)
+                let icon = runningApp.icon
 
                 // 7. Capture capped thumbnail (max 320x200) inside its own inner autoreleasepool if permitted
                 let thumbnail: NSImage? = canCaptureScreen ? captureCappedThumbnail(for: windowID) : nil
@@ -103,6 +135,51 @@ final class WindowEngine {
         }
     }
 
+    /// Resolves a window's actual title via Accessibility API when Screen Recording permission is not granted.
+    private func resolveAXWindowTitle(pid: pid_t, bounds: CGRect) -> String? {
+        guard PermissionManager.shared.isAccessibilityGranted() else {
+            return nil
+        }
+
+        let appElement = AXUIElementCreateApplication(pid)
+        var windowsRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef) == .success,
+              let axWindows = windowsRef as? [AXUIElement],
+              !axWindows.isEmpty else {
+            return nil
+        }
+
+        for axWin in axWindows {
+            var posRef: CFTypeRef?
+            var sizeRef: CFTypeRef?
+            var pos = CGPoint.zero
+            var size = CGSize.zero
+
+            if AXUIElementCopyAttributeValue(axWin, kAXPositionAttribute as CFString, &posRef) == .success,
+               let pVal = posRef, CFGetTypeID(pVal) == AXValueGetTypeID(),
+               AXValueGetValue(pVal as! AXValue, .cgPoint, &pos),
+               AXUIElementCopyAttributeValue(axWin, kAXSizeAttribute as CFString, &sizeRef) == .success,
+               let sVal = sizeRef, CFGetTypeID(sVal) == AXValueGetTypeID(),
+               AXValueGetValue(sVal as! AXValue, .cgSize, &size) {
+
+                let dx = abs(pos.x - bounds.origin.x)
+                let dy = abs(pos.y - bounds.origin.y)
+                let dw = abs(size.width - bounds.size.width)
+                let dh = abs(size.height - bounds.size.height)
+
+                if dx < 12 && dy < 12 && dw < 12 && dh < 12 {
+                    var titleRef: CFTypeRef?
+                    if AXUIElementCopyAttributeValue(axWin, kAXTitleAttribute as CFString, &titleRef) == .success,
+                       let title = (titleRef as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                       !title.isEmpty {
+                        return title
+                    }
+                }
+            }
+        }
+        return nil
+    }
+
     /// Captures and downscales a window image to at most 320x200 inside an autoreleasepool.
     private func captureCappedThumbnail(for windowID: CGWindowID) -> NSImage? {
         return autoreleasepool {
@@ -126,8 +203,8 @@ final class WindowEngine {
             let heightRatio = maxThumbnailSize.height / srcHeight
             let scale = min(1.0, min(widthRatio, heightRatio))
 
-            let targetWidth = max(1, Int( (srcWidth * scale).rounded() ))
-            let targetHeight = max(1, Int( (srcHeight * scale).rounded() ))
+            let targetWidth = max(1, Int((srcWidth * scale).rounded()))
+            let targetHeight = max(1, Int((srcHeight * scale).rounded()))
 
             guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
                   let context = CGContext(
@@ -153,17 +230,17 @@ final class WindowEngine {
         }
     }
 
-    /// Returns current process resident memory in megabytes (MB).
+    /// Returns current process physical memory footprint in megabytes (MB).
     static func currentResidentMemoryMB() -> Double {
-        var info = mach_task_basic_info()
-        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
+        var info = task_vm_info_data_t()
+        var count = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size) / 4
         let kerr: kern_return_t = withUnsafeMutablePointer(to: &info) {
             $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
-                task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
+                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
             }
         }
         guard kerr == KERN_SUCCESS else { return 0.0 }
-        return Double(info.resident_size) / (1024.0 * 1024.0)
+        return Double(info.phys_footprint) / (1024.0 * 1024.0)
     }
 
     /// Runs a 100-iteration dry-run check to verify memory stays flat and under 35MB.
