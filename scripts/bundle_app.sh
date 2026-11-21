@@ -25,10 +25,24 @@ cp "./.build/release/${APP_NAME}" "${MACOS_DIR}/${APP_NAME}"
 chmod +x "${MACOS_DIR}/${APP_NAME}"
 cp "${PROJECT_ROOT}/Resources/Info.plist" "${CONTENTS_DIR}/Info.plist"
 
-echo "==> [4/4] Signing ${APP_NAME}.app locally with hardened offline entitlements..."
-codesign --force --deep --sign - --entitlements "${PROJECT_ROOT}/Resources/MacAltTab.entitlements" "${APP_BUNDLE}"
+echo "==> [4/4] Signing ${APP_NAME}.app with hardened offline entitlements..."
+SIGNING_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | awk -F'"' '/Apple Development|Developer ID Application/ {print $2; exit}' || true)
+SIGNED_OK=false
+if [[ -n "${SIGNING_IDENTITY}" ]]; then
+    echo "    Trying keychain identity: ${SIGNING_IDENTITY}"
+    if codesign --force --deep --options runtime --sign "${SIGNING_IDENTITY}" --entitlements "${PROJECT_ROOT}/Resources/MacAltTab.entitlements" "${APP_BUNDLE}" 2>/dev/null; then
+        SIGNED_OK=true
+    else
+        echo "    Keychain identity unavailable in non-interactive shell; falling back to ad-hoc signing (-)"
+    fi
+fi
+
+if [[ "${SIGNED_OK}" != "true" ]]; then
+    codesign --force --deep --sign - --entitlements "${PROJECT_ROOT}/Resources/MacAltTab.entitlements" "${APP_BUNDLE}"
+fi
 
 echo "==> Verifying code signature..."
 codesign --verify --verbose=2 "${APP_BUNDLE}"
+codesign -dvvv "${APP_BUNDLE}" 2>&1 | grep -E "Authority=|Identifier=|TeamIdentifier=|Signature=|CDHash=" || true
 
 echo "==> Build complete: ${APP_BUNDLE}"

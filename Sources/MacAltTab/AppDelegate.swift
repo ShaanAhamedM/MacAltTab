@@ -208,10 +208,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func openPermissionsWindow() {
-        PermissionManager.shared.showOnboardingIfNeeded { [weak self] in
+        PermissionManager.shared.showOnboardingWindow(autoCloseWhenGranted: false) { [weak self] in
             self?.startEventTapIfPermitted()
         }
-        PermissionManager.shared.showOnboardingWindow()
     }
 
     @objc private func emergencyQuit() {
