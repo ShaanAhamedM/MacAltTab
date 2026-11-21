@@ -29,6 +29,7 @@ On macOS, `Command + Tab` switches between **applications**, not individual **wi
 - **100% Offline & Zero Dependencies:** Built exclusively with Apple system frameworks (`AppKit`, `CoreGraphics`, `ApplicationServices`, `Foundation`, `Carbon`). Zero Swift Package Manager dependencies, zero CocoaPods, and zero network entitlements.
 - **Ultra-Low Memory Footprint (~11 MB RAM):** Every window discovery query and thumbnail capture (`max 320x200`) runs inside strict `autoreleasepool` blocks once per switcher session and is freed immediately when the HUD closes.
 - **Sub-Millisecond Event Tap + Hardware Panic Switch:** Non-blocking `CGEventTap` callback with automatic watchdog recovery and an instant hardware-level `Control + Option + Escape` emergency killswitch.
+- **Launch at Login Toggle:** Built-in Menu Bar toggle (`Launch at Login`) backed by a clean per-user LaunchAgent (`KeepAlive = false`, so quitting or triggering the panic killswitch always stays quit).
 
 ---
 
@@ -130,6 +131,7 @@ MacAltTab/
 │   ├── HotKeyInterceptor.swift          # <1ms CGEventTap listener, watchdog & Ctrl+Opt+Esc killswitch
 │   ├── SwitcherPanel.swift              # Floating dark-mode NSPanel HUD with keyboard & mouse support
 │   ├── WindowActivator.swift            # Exact multi-window focus engine using AXUIElement
+│   ├── LaunchAtLoginManager.swift       # Clean per-user LaunchAgent manager for Launch at Login
 │   └── AppDelegate.swift                # Menu Bar controller & switcher state coordinator
 └── scripts/
     └── bundle_app.sh                    # Release compiler, 100x memory test runner & .app bundler

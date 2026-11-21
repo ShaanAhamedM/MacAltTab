@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem?
     private var statusMenuItem: NSMenuItem?
     private var pauseMenuItem: NSMenuItem?
+    private var launchAtLoginMenuItem: NSMenuItem?
 
     private let switcherPanel = SwitcherPanel()
     private var isHUDVisible: Bool = false
@@ -53,6 +54,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(pauseItem)
         self.pauseMenuItem = pauseItem
 
+        let launchAtLoginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
+        launchAtLoginItem.target = self
+        menu.addItem(launchAtLoginItem)
+        self.launchAtLoginMenuItem = launchAtLoginItem
+
         let permItem = NSMenuItem(title: "Permissions & Setup...", action: #selector(openPermissionsWindow), keyEquivalent: "")
         permItem.target = self
         menu.addItem(permItem)
@@ -91,6 +97,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             statusMenuItem?.title = "Waiting for Accessibility Permission"
             pauseMenuItem?.state = .off
         }
+        launchAtLoginMenuItem?.state = LaunchAtLoginManager.shared.isEnabled ? .on : .off
     }
 
     // MARK: - HotKey & Switcher Coordination
@@ -192,6 +199,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             HotKeyInterceptor.shared.setSwitcherActive(false)
             cancelAndCloseSwitcher()
         }
+        updateMenuStatusText()
+    }
+
+    @objc private func toggleLaunchAtLogin() {
+        _ = LaunchAtLoginManager.shared.toggle()
         updateMenuStatusText()
     }
 
